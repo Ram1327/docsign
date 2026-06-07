@@ -67,7 +67,7 @@ const documentSchema = new Schema<IDocumentDocument>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: Record<string, unknown>) {
         delete ret.__v;
         return ret;
       },

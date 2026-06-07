@@ -50,7 +50,7 @@ const userSchema = new Schema<IUserDocument, IUserModel>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: Record<string, unknown>) {
         delete ret.password;
         delete ret.__v;
         return ret;
@@ -89,9 +89,6 @@ userSchema.statics.findByEmail = function (
   return this.findOne({ email: email.toLowerCase() }).select("+password");
 };
 
-// ─── Indexes ──────────────────────────────────────────────────────────────
-
-userSchema.index({ email: 1 });
 
 export const User = mongoose.model<IUserDocument, IUserModel>(
   "User",
