@@ -15,10 +15,16 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:5000",
         changeOrigin: true,
+        // Forward Authorization header so protected file endpoints work
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const auth = (req as { headers: Record<string, string> }).headers["authorization"];
+            if (auth) proxyReq.setHeader("Authorization", auth);
+          });
+        },
       },
     },
   },
-  // react-pdf requires the worker to be served as a static asset
   optimizeDeps: {
     include: ["react-pdf"],
   },

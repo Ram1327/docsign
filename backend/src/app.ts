@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // ─── Rate limiting ────────────────────────────────────────────────────────
 app.use(generalLimiter);
 
-// ─── Static files (dev only — in prod use S3/CDN) ─────────────────────────
+// ─── Static files (dev only) ──────────────────────────────────────────────
 if (env.NODE_ENV === "development") {
   app.use(
     "/uploads",
@@ -50,19 +50,19 @@ app.get("/health", (_req, res) => {
 // ─── API routes ───────────────────────────────────────────────────────────
 import authRoutes from "./routes/auth.routes";
 import documentRoutes from "./routes/document.routes";
+import signatureRoutes from "./routes/signature.routes";
+
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
-// app.use("/api/signatures", signatureRoutes); // Day 5
+app.use("/api/signatures", signatureRoutes);
 // app.use("/api/signing-links", signingLinkRoutes); // Day 9
-// app.use("/api/audit", auditRoutes);          // Day 10
+// app.use("/api/audit", auditRoutes);               // Day 10
 
-// ─── 404 handler ─────────────────────────────────────────────────────────
+// ─── 404 + error handlers ─────────────────────────────────────────────────
 app.use(notFoundHandler);
-
-// ─── Global error handler ─────────────────────────────────────────────────
 app.use(errorHandler);
 
-// ─── Start server ─────────────────────────────────────────────────────────
+// ─── Bootstrap ────────────────────────────────────────────────────────────
 async function bootstrap() {
   await connectDB();
   app.listen(env.PORT, () => {
