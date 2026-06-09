@@ -2,8 +2,17 @@ import { Request, Response, NextFunction } from "express";
 import path from "path";
 import * as documentService from "../services/document.service";
 import { resolveFilePath } from "../services/storage.service";
+import { createAuditLog } from "../services/audit.service";
 import { sendSuccess, sendPaginated, sendError } from "../utils/response.utils";
 import { env } from "../config/env";
+
+// ─── Helper: extract client IP ────────────────────────────────────────────
+
+function getIp(req: Request): string {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string") return fwd.split(",")[0].trim();
+  return req.socket.remoteAddress ?? "unknown";
+}
 
 // ─── POST /api/documents/upload ───────────────────────────────────────────
 
@@ -26,6 +35,19 @@ export async function upload(
       title,
       ownerId: req.user!.userId,
       file: req.file,
+    });
+
+    // Audit upload — fire-and-forget, must not block response
+    void createAuditLog({
+      userId: req.user!.userId,
+      documentId: String(doc._id),
+      action: "upload",
+      ipAddress: getIp(req),
+      metadata: {
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        title: doc.title,
+      },
     });
 
     sendSuccess(res, "Document uploaded successfully", doc, 201);
@@ -96,7 +118,6 @@ export async function remove(
 }
 
 // ─── GET /api/documents/:id/file ─────────────────────────────────────────
-// Protected file serving — only the document owner gets the raw PDF
 
 export async function serveFile(
   req: Request,
@@ -115,12 +136,8 @@ export async function serveFile(
     const fileName = path.basename(relativePath);
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${fileName}"`
-    );
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
 
-    // Prevent caching of protected files
     if (env.NODE_ENV === "production") {
       res.setHeader("Cache-Control", "private, no-store");
     }

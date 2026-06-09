@@ -3,31 +3,42 @@ import * as documentController from "../controllers/document.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { handleUpload } from "../middleware/upload.middleware";
 import { uploadLimiter } from "../middleware/rateLimiter.middleware";
+import { auditAction } from "../middleware/audit.middleware";
 
 const router = Router();
 
-// All document routes require authentication
 router.use(authenticate);
 
-// Upload
-router.post(
-  "/upload",
-  uploadLimiter,
-  handleUpload,
-  documentController.upload
-);
+// Upload — audit handled directly in controller (needs the created doc's _id)
+router.post("/upload", uploadLimiter, handleUpload, documentController.upload);
 
-// List all (owned, not deleted)
+// List — no audit (read-only, high frequency)
 router.get("/", documentController.list);
 
-// Get single document metadata
-router.get("/:id", documentController.getOne);
+// View single — audit "view"
+router.get(
+  "/:id",
+  auditAction("view", (req) => req.params.id),
+  documentController.getOne
+);
 
-// Soft delete
-router.delete("/:id", documentController.remove);
+// Soft delete — audit "delete"
+router.delete(
+  "/:id",
+  auditAction("delete", (req) => req.params.id),
+  documentController.remove
+);
 
-// Protected file serving
-router.get("/:id/file", documentController.serveFile);
-router.get("/:id/signed-file", documentController.serveFile);
+// File serving — audit "download"
+router.get(
+  "/:id/file",
+  auditAction("download", (req) => req.params.id),
+  documentController.serveFile
+);
+router.get(
+  "/:id/signed-file",
+  auditAction("download", (req) => req.params.id),
+  documentController.serveFile
+);
 
 export default router;

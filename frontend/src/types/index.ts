@@ -31,6 +31,8 @@ export interface Document {
   ownerId: string;
   status: DocumentStatus;
   signedFileUrl?: string;
+  fileSize: number;
+  mimeType: string;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;

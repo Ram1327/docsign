@@ -31,7 +31,6 @@ export async function deleteFile(relativePath: string): Promise<void> {
     const fullPath = resolveFilePath(relativePath);
     await fs.unlink(fullPath);
   } catch (err: unknown) {
-    // If file doesn't exist, silently succeed (idempotent delete)
     const code = (err as NodeJS.ErrnoException).code;
     if (code !== "ENOENT") throw err;
   }
@@ -53,6 +52,27 @@ export async function fileExists(relativePath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ─── Magic byte validator ─────────────────────────────────────────────────
+// PDF files always start with %PDF (hex: 25 50 44 46).
+// Runs after Multer saves the file so we can read the actual bytes.
+// Prevents disguised files (e.g. .exe renamed to .pdf) from being accepted.
+
+export async function validatePdfMagicBytes(
+  filePath: string
+): Promise<boolean> {
+  const fd = await fs.open(filePath, "r");
+  const buffer = Buffer.alloc(4);
+  await fd.read(buffer, 0, 4, 0);
+  await fd.close();
+
+  return (
+    buffer[0] === 0x25 && // %
+    buffer[1] === 0x50 && // P
+    buffer[2] === 0x44 && // D
+    buffer[3] === 0x46    // F
+  );
 }
 
 /*
