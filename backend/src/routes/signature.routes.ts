@@ -9,5 +9,6 @@ router.use(authenticate);
 router.post("/", signatureController.create);
 router.get("/document/:docId", signatureController.listByDocument);
 router.delete("/:id", signatureController.remove);
+router.post("/finalize/:docId", signatureController.finalize);
 
 export default router;

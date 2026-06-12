@@ -10,23 +10,16 @@ export async function create(
   next: NextFunction
 ): Promise<void> {
   try {
-    const {
-      documentId,
-      signerEmail,
-      x,
-      y,
-      page,
-      pageWidth,
-      pageHeight,
-    } = req.body as {
-      documentId: string;
-      signerEmail?: string;
-      x: number;
-      y: number;
-      page: number;
-      pageWidth: number;
-      pageHeight: number;
-    };
+    const { documentId, signerEmail, x, y, page, pageWidth, pageHeight } =
+      req.body as {
+        documentId: string;
+        signerEmail?: string;
+        x: number;
+        y: number;
+        page: number;
+        pageWidth: number;
+        pageHeight: number;
+      };
 
     const signature = await signatureService.createSignature({
       documentId,
@@ -73,6 +66,24 @@ export async function remove(
   try {
     await signatureService.deleteSignature(req.params.id, req.user!.userId);
     sendSuccess(res, "Signature field removed");
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ─── POST /api/signatures/finalize/:docId ────────────────────────────────
+
+export async function finalize(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await signatureService.finalizeDocument(
+      req.params.docId,
+      req.user!.userId
+    );
+    sendSuccess(res, "Document finalized successfully", result);
   } catch (error) {
     next(error);
   }

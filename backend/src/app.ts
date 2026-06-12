@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.routes";
 import documentRoutes from "./routes/document.routes";
 import signatureRoutes from "./routes/signature.routes";
 import auditRoutes from "./routes/audit.routes";
+import signingLinkRoutes from "./routes/signingLink.routes";
 
 const app = express();
 
@@ -36,7 +37,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/signatures", signatureRoutes);
 app.use("/api/audit", auditRoutes);
-// app.use("/api/signing-links", signingLinkRoutes); // Day 9
+app.use("/api/signing-links", signingLinkRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

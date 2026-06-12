@@ -10,6 +10,7 @@ interface SignaturePanelProps {
   onTogglePlaceMode: () => void;
   onRemove: (id: string) => Promise<void>;
   onFinalize: () => void;
+  onSendForSigning: () => void;
   isFinalizing: boolean;
 }
 
@@ -21,30 +22,24 @@ export function SignaturePanel({
   onTogglePlaceMode,
   onRemove,
   onFinalize,
+  onSendForSigning,
   isFinalizing,
 }: SignaturePanelProps) {
   const [removingId, setRemovingId] = useState<string | null>(null);
-
   const pendingCount = signatures.filter((s) => s.status === "pending").length;
   const canFinalize = signatures.length > 0 && documentStatus === "pending";
 
   const handleRemove = async (id: string) => {
     setRemovingId(id);
-    try {
-      await onRemove(id);
-    } finally {
-      setRemovingId(null);
-    }
+    try { await onRemove(id); } finally { setRemovingId(null); }
   };
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Header ────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="p-4 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">
-            Signature fields
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-900">Signature fields</h3>
           {signatures.length > 0 && (
             <span className="text-xs text-gray-400 tabular-nums">
               {signatures.length} field{signatures.length !== 1 ? "s" : ""}
@@ -80,7 +75,7 @@ export function SignaturePanel({
         )}
       </div>
 
-      {/* ── Field list ────────────────────────────────────────────────── */}
+      {/* Field list */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -96,30 +91,22 @@ export function SignaturePanel({
               </svg>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed">
-              No fields yet.
-              {documentStatus === "pending" && (
-                <><br />Click <span className="font-medium text-gray-600">Place signature field</span> then click anywhere on the PDF.</>
-              )}
+              {documentStatus === "pending"
+                ? "Click \"Place signature field\" then click anywhere on the PDF"
+                : "No signature fields"}
             </p>
           </div>
         ) : (
           signatures.map((sig, i) => (
-            <div
-              key={sig._id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50 group"
-            >
+            <div key={sig._id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50 group">
               <div className="w-7 h-7 rounded-md bg-brand-100 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-brand-600">{i + 1}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-700">
-                  Page {sig.page}
+                <p className="text-xs font-medium text-gray-700">Page {sig.page}</p>
+                <p className="text-[11px] text-gray-400 truncate">
+                  {sig.signerEmail ?? "No signer assigned"}
                 </p>
-                {sig.signerEmail ? (
-                  <p className="text-[11px] text-gray-400 truncate">{sig.signerEmail}</p>
-                ) : (
-                  <p className="text-[11px] text-gray-400">No signer assigned</p>
-                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <StatusBadge status={sig.status} />
@@ -128,10 +115,11 @@ export function SignaturePanel({
                     onClick={() => handleRemove(sig._id)}
                     disabled={removingId === sig._id}
                     className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all disabled:opacity-50"
-                    title="Remove field"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                   </button>
                 )}
@@ -141,17 +129,32 @@ export function SignaturePanel({
         )}
       </div>
 
-      {/* ── Finalize button ───────────────────────────────────────────── */}
+      {/* Actions footer */}
       {canFinalize && (
-        <div className="p-4 border-t border-gray-100 shrink-0">
+        <div className="p-4 border-t border-gray-100 shrink-0 flex flex-col gap-2">
           {pendingCount > 0 && (
-            <p className="text-xs text-amber-600 mb-3 flex items-center gap-1.5">
+            <p className="text-xs text-amber-600 flex items-center gap-1.5 mb-1">
               <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              {pendingCount} field{pendingCount !== 1 ? "s" : ""} awaiting signature
+              {pendingCount} field{pendingCount !== 1 ? "s" : ""} pending
             </p>
           )}
+
+          {/* Send for external signing */}
+          <button
+            onClick={onSendForSigning}
+            className="w-full btn-secondary justify-center text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            Send signing link
+          </button>
+
+          {/* Self-finalize */}
           <button
             onClick={onFinalize}
             disabled={isFinalizing}
@@ -170,13 +173,10 @@ export function SignaturePanel({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Finalize & send
+                Finalize & sign now
               </>
             )}
           </button>
-          <p className="text-[11px] text-gray-400 text-center mt-2">
-            Embeds signatures into the PDF (Day 8)
-          </p>
         </div>
       )}
 
@@ -187,6 +187,17 @@ export function SignaturePanel({
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             <span className="text-xs font-medium">Document fully signed</span>
+          </div>
+        </div>
+      )}
+
+      {documentStatus === "rejected" && (
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs font-medium">Document was rejected</span>
           </div>
         </div>
       )}

@@ -1,0 +1,326 @@
+{
+  "info": {
+    "_postman_id": "docsign-api-collection",
+    "name": "DocSign API",
+    "description": "Complete API collection for DocSign — Document Signature App\n\nSetup:\n1. Set {{baseUrl}} variable to http://localhost:5000\n2. Run 'Login' first, copy accessToken\n3. Set {{token}} variable to the accessToken value\n4. Use {{docId}} and {{sigId}} variables as you test",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "docId", "value": "" },
+    { "key": "sigId", "value": "" },
+    { "key": "linkToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@test.com\",\n  \"password\": \"Test1234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.data.accessToken);",
+                  "  console.log('Token saved automatically');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"Test1234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/refresh",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"paste_refresh_token_here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"paste_refresh_token_here\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload PDF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.collectionVariables.set('docId', res.data._id);",
+                  "  console.log('docId saved:', res.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "title", "type": "text", "value": "My Test Document" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Documents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/documents?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "pending", "disabled": true }
+              ]
+            },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Get Single Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/documents/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Serve Original PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/{{docId}}/file",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Serve Signed PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/{{docId}}/signed-file",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Signatures",
+      "item": [
+        {
+          "name": "Create Signature Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data._id) {",
+                  "  pm.collectionVariables.set('sigId', res.data._id);",
+                  "  console.log('sigId saved:', res.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/signatures",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{docId}}\",\n  \"x\": 150,\n  \"y\": 300,\n  \"page\": 1,\n  \"pageWidth\": 612,\n  \"pageHeight\": 792\n}"
+            }
+          }
+        },
+        {
+          "name": "List Signatures for Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/signatures/document/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Delete Signature Field",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/signatures/{{sigId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Finalize Document",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/signatures/finalize/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Signing Links",
+      "item": [
+        {
+          "name": "Generate Signing Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.link && res.data.link.token) {",
+                  "  pm.collectionVariables.set('linkToken', res.data.link.token);",
+                  "  console.log('URL:', res.data.url);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/signing-links/generate",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{docId}}\",\n  \"signerEmail\": \"signer@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Validate Token (Public)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/signing-links/validate/{{linkToken}}"
+          }
+        },
+        {
+          "name": "Sign via Public Link",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/signing-links/sign/{{linkToken}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sign\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reject via Public Link",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/signing-links/sign/{{linkToken}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"rejectionReason\": \"Terms are not acceptable\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Links for Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/signing-links/document/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "Get Audit Trail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit/{{docId}}",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}

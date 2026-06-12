@@ -27,4 +27,11 @@ export const signatureService = {
   async delete(signatureId: string): Promise<void> {
     await api.delete(`/signatures/${signatureId}`);
   },
+
+  async finalize(documentId: string): Promise<{ signedFileUrl: string }> {
+    const res = await api.post<ApiResponse<{ signedFileUrl: string }>>(
+      `/signatures/finalize/${documentId}`
+    );
+    return res.data.data!;
+  },
 };

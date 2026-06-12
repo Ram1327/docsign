@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: docsign-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/app.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false          # set in Render dashboard
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_FILE_SIZE_MB
+        value: 10
+      - key: CORS_ORIGIN
+        sync: false          # set to your Vercel frontend URL
+      - key: SIGNING_LINK_EXPIRES_DAYS
+        value: 7
+      - key: FRONTEND_URL
+        sync: false          # set to your Vercel frontend URL
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1

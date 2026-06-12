@@ -1,12 +1,17 @@
+import path from "path";
+import fs from "fs/promises";
 import { SignatureModel, ISignatureDocument } from "../models/Signature.model";
 import { DocumentModel } from "../models/Document.model";
 import { AppError } from "../middleware/errorHandler.middleware";
+import { embedSignatures } from "./pdfProcessor.service";
+import { resolveFilePath } from "./storage.service";
+import { env } from "../config/env";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
 export interface CreateSignatureInput {
   documentId: string;
-  ownerId: string; // verified against document
+  ownerId: string;
   signerEmail?: string;
   x: number;
   y: number;
@@ -20,6 +25,7 @@ export interface UpdateSignatureStatusInput {
   documentId: string;
   status: "signed" | "rejected";
   rejectionReason?: string;
+  signerName?: string;
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────
@@ -27,22 +33,17 @@ export interface UpdateSignatureStatusInput {
 export async function createSignature(
   input: CreateSignatureInput
 ): Promise<ISignatureDocument> {
-  // Verify the document exists and belongs to the requesting user
   const doc = await DocumentModel.findOne({
     _id: input.documentId,
     ownerId: input.ownerId,
     isDeleted: false,
   });
 
-  if (!doc) {
-    throw new AppError("Document not found or access denied", 404);
-  }
-
-  if (doc.status === "signed") {
+  if (!doc) throw new AppError("Document not found or access denied", 404);
+  if (doc.status === "signed")
     throw new AppError("Cannot add signatures to an already signed document", 403);
-  }
 
-  const signature = await SignatureModel.create({
+  return SignatureModel.create({
     documentId: input.documentId,
     signerEmail: input.signerEmail ?? null,
     x: input.x,
@@ -51,8 +52,6 @@ export async function createSignature(
     pageWidth: input.pageWidth,
     pageHeight: input.pageHeight,
   });
-
-  return signature;
 }
 
 // ─── List by document ─────────────────────────────────────────────────────
@@ -61,55 +60,41 @@ export async function listSignatures(
   documentId: string,
   ownerId: string
 ): Promise<ISignatureDocument[]> {
-  // Verify ownership
   const doc = await DocumentModel.findOne({
     _id: documentId,
     ownerId,
     isDeleted: false,
   });
-
-  if (!doc) {
-    throw new AppError("Document not found or access denied", 404);
-  }
+  if (!doc) throw new AppError("Document not found or access denied", 404);
 
   return SignatureModel.find({ documentId }).sort({ page: 1, createdAt: 1 });
 }
 
-// ─── Delete a single signature field ─────────────────────────────────────
+// ─── Delete ───────────────────────────────────────────────────────────────
 
 export async function deleteSignature(
   signatureId: string,
   ownerId: string
 ): Promise<void> {
   const signature = await SignatureModel.findById(signatureId).populate<{
-    documentId: { ownerId: string; status: string };
+    documentId: { ownerId: { toString(): string }; status: string };
   }>("documentId", "ownerId status");
 
-  if (!signature) {
-    throw new AppError("Signature field not found", 404);
-  }
+  if (!signature) throw new AppError("Signature field not found", 404);
 
   const doc = signature.documentId as unknown as {
     ownerId: { toString(): string };
     status: string;
   };
 
-  if (doc.ownerId.toString() !== ownerId) {
-    throw new AppError("Access denied", 403);
-  }
-
-  if (doc.status === "signed") {
-    throw new AppError("Cannot remove signatures from a signed document", 403);
-  }
-
-  if (signature.status === "signed") {
-    throw new AppError("Cannot remove an already-signed field", 403);
-  }
+  if (doc.ownerId.toString() !== ownerId) throw new AppError("Access denied", 403);
+  if (doc.status === "signed") throw new AppError("Cannot remove signatures from a signed document", 403);
+  if (signature.status === "signed") throw new AppError("Cannot remove an already-signed field", 403);
 
   await SignatureModel.findByIdAndDelete(signatureId);
 }
 
-// ─── Update status (used on Day 9 by public signing) ─────────────────────
+// ─── Update status (sign / reject) ───────────────────────────────────────
 
 export async function updateSignatureStatus(
   input: UpdateSignatureStatusInput
@@ -118,24 +103,63 @@ export async function updateSignatureStatus(
     _id: input.signatureId,
     documentId: input.documentId,
   });
-
-  if (!signature) {
-    throw new AppError("Signature not found", 404);
-  }
+  if (!signature) throw new AppError("Signature not found", 404);
 
   signature.status = input.status;
-  if (input.status === "signed") {
-    signature.signedAt = new Date();
-  }
-  if (input.rejectionReason) {
-    signature.rejectionReason = input.rejectionReason;
-  }
+  if (input.status === "signed") signature.signedAt = new Date();
+  if (input.rejectionReason) signature.rejectionReason = input.rejectionReason;
 
   await signature.save();
   return signature;
 }
 
-// ─── Get all signatures for a document (internal — no owner check) ────────
+// ─── Finalize document — embed all signatures + generate signed PDF ───────
+
+export async function finalizeDocument(
+  documentId: string,
+  ownerId: string
+): Promise<{ signedFileUrl: string }> {
+  const doc = await DocumentModel.findOne({
+    _id: documentId,
+    ownerId,
+    isDeleted: false,
+  });
+  if (!doc) throw new AppError("Document not found or access denied", 404);
+  if (doc.status === "signed") throw new AppError("Document already finalized", 400);
+
+  const signatures = await SignatureModel.find({ documentId });
+  if (signatures.length === 0) throw new AppError("No signature fields to finalize", 400);
+
+  // Mark all pending signatures as signed
+  await SignatureModel.updateMany(
+    { documentId, status: "pending" },
+    { status: "signed", signedAt: new Date() }
+  );
+
+  // Re-fetch with updated statuses
+  const updatedSigs = await SignatureModel.find({ documentId });
+
+  // Embed into PDF
+  const { buffer } = await embedSignatures({
+    fileUrl: doc.fileUrl,
+    signatures: updatedSigs,
+  });
+
+  // Save signed PDF to disk
+  const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR);
+  const signedFileName = `signed_${path.basename(doc.fileUrl)}`;
+  const signedAbsPath = path.join(uploadRoot, signedFileName);
+  await fs.writeFile(signedAbsPath, buffer);
+
+  // Update document record
+  doc.status = "signed";
+  doc.signedFileUrl = signedFileName;
+  await doc.save();
+
+  return { signedFileUrl: signedFileName };
+}
+
+// ─── Get all signatures (no owner check — used by public signing) ─────────
 
 export async function getSignaturesByDocument(
   documentId: string
