@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { signingLinkService, ValidateTokenResult } from "@/services/signingLink.service";
-import { usePDFBlob } from "@/hooks/usePDFBlob";
-import { PDFViewer } from "@/components/signature/PDFViewer";
 
 type PageState = "loading" | "valid" | "invalid" | "expired" | "used" | "done";
 
@@ -40,11 +38,6 @@ export default function PublicSignPage() {
         }
       });
   }, [token]);
-
-  // Fetch PDF through our API (needs auth bypass — use public endpoint path)
-  // For public signing we use direct URL with token in query (backend handles this)
-  // For now we use the same blob pattern — the validate endpoint confirmed access
-  const pdfPath = data ? `/signing-links/pdf/${token}` : "";
 
   const handleSign = async () => {
     if (!token) return;

@@ -31,7 +31,7 @@ export function errorHandler(
   }
 
   // Mongoose duplicate key
-  if (err.name === "MongoServerError" && (err as NodeJS.ErrnoException).code === 11000) {
+  if (err.name === "MongoServerError" && Number((err as NodeJS.ErrnoException).code) === 11000) {
     return sendError(res, "Duplicate field value", 409, "DuplicateKey");
   }
 

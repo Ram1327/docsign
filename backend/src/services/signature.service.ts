@@ -4,7 +4,7 @@ import { SignatureModel, ISignatureDocument } from "../models/Signature.model";
 import { DocumentModel } from "../models/Document.model";
 import { AppError } from "../middleware/errorHandler.middleware";
 import { embedSignatures } from "./pdfProcessor.service";
-import { resolveFilePath } from "./storage.service";
+
 import { env } from "../config/env";
 
 // ─── Types ────────────────────────────────────────────────────────────────

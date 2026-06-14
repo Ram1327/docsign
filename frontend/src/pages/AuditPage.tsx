@@ -226,21 +226,21 @@ export default function AuditPage() {
                       {log.ipAddress}
                     </span>
 
-                    {log.metadata?.fileName && (
+                    {typeof log.metadata?.fileName === "string" && (
                       <span className="inline-flex items-center text-[11px] text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full truncate max-w-[180px]">
-                        {String(log.metadata.fileName)}
+                        {log.metadata.fileName}
                       </span>
                     )}
 
-                    {log.metadata?.rejectionReason && (
+                    {typeof log.metadata?.rejectionReason === "string" && (
                       <span className="inline-flex items-center text-[11px] text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
-                        Reason: {String(log.metadata.rejectionReason)}
+                        Reason: {log.metadata.rejectionReason}
                       </span>
                     )}
 
-                    {log.metadata?.fileType && (
+                    {typeof log.metadata?.fileType === "string" && (
                       <span className="inline-flex items-center text-[11px] text-purple-500 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-full">
-                        {String(log.metadata.fileType)} PDF
+                        {log.metadata.fileType} PDF
                       </span>
                     )}
                   </div>
@@ -258,7 +258,7 @@ export default function AuditPage() {
             Legend
           </p>
           <div className="flex flex-wrap gap-2">
-            {(Object.entries(ACTION_CONFIG) as [AuditAction, typeof ACTION_CONFIG[AuditAction]][]).map(
+            {(Object.entries(ACTION_CONFIG) as Array<[AuditAction, { label: string; icon: string; color: string; bg: string }]>).map(
               ([key, cfg]) => (
                 <span
                   key={key}

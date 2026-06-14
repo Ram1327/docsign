@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
 
   // Fetch filtered list
-  const { documents, total, totalPages, isLoading, error, deleteDocument } =
+  const { documents, totalPages, isLoading, error, deleteDocument } =
     useDocuments({ page, limit: 9, status: statusFilter || undefined });
 
   // Fetch all (no filter) just for stats counts

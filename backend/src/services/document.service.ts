@@ -73,11 +73,11 @@ export async function listDocuments(options: ListDocumentsOptions): Promise<{
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean(),
+      .exec(),
     DocumentModel.countDocuments(filter),
   ]);
 
-  return { documents: documents as IDocumentDocument[], total };
+  return { documents: documents ?? [], total };
 }
 
 // ─── Get single ───────────────────────────────────────────────────────────
