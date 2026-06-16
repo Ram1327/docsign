@@ -43,10 +43,14 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 async function bootstrap() {
-  await connectDB();
   app.listen(env.PORT, () => {
     console.info(`🚀 Server running on http://localhost:${env.PORT}`);
     console.info(`📁 Environment: ${env.NODE_ENV}`);
+  });
+
+  connectDB().catch((err) => {
+    console.error("Fatal database connection error:", err);
+    process.exit(1);
   });
 }
 
