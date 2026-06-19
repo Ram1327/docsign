@@ -8,23 +8,10 @@ This document serves as the presentation guide for the DocSign platform, detaili
 ## 1. Project Overview & Meta Information
 
 *   **Project Title**: DocSign – A Full-Stack Document Signature & Audit Platform
-*   **Presenter**: Ramsurya
-*   **Role**: Software Engineer Intern
-*   **Internship Period**: [Start Date] – [End Date]
-*   **Organization**: [Company/Institution Name]
-*   **Academic Supervisor**: [Supervisor Name]
-*   **Industry Mentor**: [Mentor Name]
+*   **Presenter**: Ram Ravish
 *   **Primary Development IDE**: **VS Code** (Visual Studio Code)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           DocSign                               │
-│        Full-Stack Document Signature & Audit Platform           │
-│                                                                 │
-│   Presenter: Ramsurya                 Academic Supervisor: [...] │
-│   Role: Software Engineer Intern      Industry Mentor:     [...] │
-│   IDE: VS Code                        Workspace: Monorepo        │
-└─────────────────────────────────────────────────────────────────┘
+
 ```
 
 ---
