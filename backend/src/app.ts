@@ -15,8 +15,28 @@ import signingLinkRoutes from "./routes/signingLink.routes";
 const app = express();
 
 app.use(helmet());
+const allowedOrigins = [
+  env.CORS_ORIGIN,
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.endsWith(".vercel.app") ||
+                      origin.match(/^https:\/\/docsign-frontend-.*-3921s-projects\.vercel\.app$/);
+                      
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked for origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
