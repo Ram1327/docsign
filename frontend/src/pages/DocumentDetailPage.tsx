@@ -200,7 +200,8 @@ export default function DocumentDetailPage() {
           documentTitle={doc.title}
           onClose={() => setShowLinkModal(false)}
           onGenerated={() => {
-            setShowLinkModal(false);
+            // Keep the modal open so the user can see and copy the generated link.
+            // The modal has its own "Done" button to close it.
           }}
         />
       )}
