@@ -12,7 +12,7 @@ This document serves as the presentation guide for the DocSign platform, detaili
 *   **Primary Development IDE**: **VS Code** (Visual Studio Code)
 
 
-```
+
 
 ---
 
@@ -237,7 +237,7 @@ frontend/src/
 *   **Database Seeding**:
     *   A custom seed script (`npm run seed --workspace=backend`) connects to MongoDB Atlas to populate default demo users.
 *   **End-to-End browser verification**:
-    *   Tested the complete user flow (login, PDF upload, coordinates selection, signing link validation) using Chrome DevTools MCP script injection.
+    *   Tested the complete user flow (login, PDF upload, coordinates selection, signing link validation) in both local and deployed sites.
     *   Visual interfaces verified across responsive layouts.
 
 ---
