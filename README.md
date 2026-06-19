@@ -8,8 +8,8 @@ A production-quality full-stack document signing SaaS application built with Rea
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://docsign.vercel.app *(update after deploy)* |
-| Backend API | https://docsign-backend.onrender.com *(update after deploy)* |
+| Frontend | https://docsign-frontend.vercel.app |
+| Backend API | https://docsign-backend-production.up.railway.app |
 | Demo login | `demo@docsign.app` / `Demo1234` |
 
 ---
